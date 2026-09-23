@@ -7,8 +7,6 @@ using HomelabBlog.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Noscope360!"));
-
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
