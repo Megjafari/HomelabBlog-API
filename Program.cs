@@ -3,10 +3,15 @@ using HomelabBlog.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using HomelabBlog.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Noscope360!"));
+
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
