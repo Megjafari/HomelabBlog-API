@@ -27,6 +27,24 @@ public class MinioFileStorageService : IFileStorageService
         if (!bucketExists)
         {
             await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_bucket));
+
+            var policy = $$"""
+            {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": ["s3:GetObject"],
+                "Resource": ["arn:aws:s3:::{{_bucket}}/*"]
+                }
+            ]
+            }
+            """;
+
+            await _client.SetPolicyAsync(new SetPolicyArgs()
+                .WithBucket(_bucket)
+                .WithPolicy(policy));
         }
 
         var objectName = $"{Guid.NewGuid()}-{fileName}";
