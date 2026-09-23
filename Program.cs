@@ -9,7 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -33,6 +43,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<BlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BlogDb")));
 
+builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -41,6 +53,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
