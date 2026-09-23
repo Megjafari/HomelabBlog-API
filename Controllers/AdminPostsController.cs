@@ -19,6 +19,33 @@ public class AdminPostsController : ControllerBase
         _db = db;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<List<PostDetailDto>>> GetAll()
+    {
+        var posts = await _db.Posts
+            .Include(p => p.Tags)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new PostDetailDto(
+                p.Id, p.Title, p.Slug, p.Content, p.Excerpt,
+                p.HeroImageUrl, p.Status.ToString(), p.PublishedAt,
+                p.Tags.Select(t => t.Slug).ToList()))
+            .ToListAsync();
+
+        return Ok(posts);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<PostDetailDto>> GetById(Guid id)
+    {
+        var post = await _db.Posts.Include(p => p.Tags).FirstOrDefaultAsync(p => p.Id == id);
+        if (post is null) return NotFound();
+
+        return Ok(new PostDetailDto(
+            post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.Tags.Select(t => t.Slug).ToList()));
+    }
+
     [HttpPost]
     public async Task<ActionResult<PostDetailDto>> Create(CreatePostDto dto)
     {
@@ -48,11 +75,11 @@ public class AdminPostsController : ControllerBase
             post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
             post.Tags.Select(t => t.Slug).ToList());
 
-        return CreatedAtAction(nameof(Create), new { id = post.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = post.Id }, result);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(Guid id, UpdatePostDto dto)
+    public async Task<ActionResult<PostDetailDto>> Update(Guid id, UpdatePostDto dto)
     {
         var post = await _db.Posts.Include(p => p.Tags).FirstOrDefaultAsync(p => p.Id == id);
         if (post is null) return NotFound();
@@ -72,7 +99,13 @@ public class AdminPostsController : ControllerBase
         post.Tags = await ResolveTags(dto.Tags);
 
         await _db.SaveChangesAsync();
-        return NoContent();
+
+        var result = new PostDetailDto(
+            post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.Tags.Select(t => t.Slug).ToList());
+
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]
@@ -94,6 +127,17 @@ public class AdminPostsController : ControllerBase
 
         post.Status = PostStatus.Published;
         post.PublishedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPost("{id}/unpublish")]
+    public async Task<IActionResult> Unpublish(Guid id)
+    {
+        var post = await _db.Posts.FindAsync(id);
+        if (post is null) return NotFound();
+
+        post.Status = PostStatus.Draft;
         await _db.SaveChangesAsync();
         return NoContent();
     }
