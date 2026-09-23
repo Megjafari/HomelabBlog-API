@@ -22,6 +22,12 @@ public class AdminPostsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PostDetailDto>> Create(CreatePostDto dto)
     {
+        var slugExists = await _db.Posts.AnyAsync(p => p.Slug == dto.Slug);
+        if (slugExists)
+        {
+            return Conflict($"A post with slug '{dto.Slug}' already exists.");
+        }
+
         var tags = await ResolveTags(dto.Tags);
 
         var post = new Post
@@ -37,7 +43,12 @@ public class AdminPostsController : ControllerBase
         _db.Posts.Add(post);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(Create), new { id = post.Id }, post);
+        var result = new PostDetailDto(
+            post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.Tags.Select(t => t.Slug).ToList());
+
+        return CreatedAtAction(nameof(Create), new { id = post.Id }, result);
     }
 
     [HttpPut("{id}")]
@@ -45,6 +56,12 @@ public class AdminPostsController : ControllerBase
     {
         var post = await _db.Posts.Include(p => p.Tags).FirstOrDefaultAsync(p => p.Id == id);
         if (post is null) return NotFound();
+
+        var slugTaken = await _db.Posts.AnyAsync(p => p.Slug == dto.Slug && p.Id != id);
+        if (slugTaken)
+        {
+            return Conflict($"A post with slug '{dto.Slug}' already exists.");
+        }
 
         post.Title = dto.Title;
         post.Slug = dto.Slug;
