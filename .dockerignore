@@ -1,0 +1,4 @@
+bin/
+obj/
+Migrations/*.Designer.cs
+appsettings.Development.json
