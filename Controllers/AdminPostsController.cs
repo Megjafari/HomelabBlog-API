@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using HomelabBlog.Api.Data;
 using HomelabBlog.Api.DTOs;
 using HomelabBlog.Api.Models;
+using HomelabBlog.Api.Services;
 
 namespace HomelabBlog.Api.Controllers;
 
@@ -146,15 +147,7 @@ public class AdminPostsController : ControllerBase
     {
         if (tagNames is null || tagNames.Count == 0) return new List<Tag>();
 
-        // Tags are identified by slug, so "K8s" and "k8s" are the same tag.
-        var wanted = tagNames
-            .Select(n => n.Trim())
-            .Where(n => n.Length > 0)
-            .Select(n => (Name: n, Slug: TagSlug(n)))
-            .Where(t => t.Slug.Length > 0)
-            .GroupBy(t => t.Slug)
-            .Select(g => g.First())
-            .ToList();
+        var wanted = TagNames.Normalize(tagNames);
 
         var slugs = wanted.Select(t => t.Slug).ToList();
         var existing = await _db.Tags.Where(t => slugs.Contains(t.Slug)).ToListAsync();
@@ -163,11 +156,5 @@ public class AdminPostsController : ControllerBase
             .Select(t => new Tag { Name = t.Name, Slug = t.Slug });
 
         return existing.Concat(missing).ToList();
-    }
-
-    private static string TagSlug(string name)
-    {
-        var slug = System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant(), @"[^a-z0-9]+", "-");
-        return slug.Trim('-');
     }
 }

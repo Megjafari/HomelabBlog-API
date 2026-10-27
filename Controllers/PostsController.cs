@@ -18,7 +18,7 @@ public class PostsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<PostListItemDto>>> GetAll([FromQuery] string? tag, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<ActionResult<List<PostListItemDto>>> GetAll([FromQuery] string? tag, [FromQuery] string? q, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 50);
@@ -30,6 +30,15 @@ public class PostsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(tag))
         {
             query = query.Where(p => p.Tags.Any(t => t.Slug == tag));
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var pattern = $"%{EscapeLike(q.Trim())}%";
+            query = query.Where(p =>
+                EF.Functions.ILike(p.Title, pattern, "\\") ||
+                (p.Excerpt != null && EF.Functions.ILike(p.Excerpt, pattern, "\\")) ||
+                EF.Functions.ILike(p.Content, pattern, "\\"));
         }
 
         var posts = await query
@@ -59,4 +68,7 @@ public class PostsController : ControllerBase
             post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
             post.Tags.Select(t => t.Slug).ToList()));
     }
+
+    private static string EscapeLike(string value) =>
+        value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }
