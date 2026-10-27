@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using HomelabBlog.Api.Services;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
@@ -67,7 +68,16 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<BlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BlogDb")));
 
-builder.Services.AddSingleton<IFileStorageService, MinioFileStorageService>();
+if (string.Equals(builder.Configuration["Storage:Provider"], "Minio", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<IFileStorageService, MinioFileStorageService>();
+}
+else
+{
+    builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+}
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -89,6 +99,24 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+if (!string.Equals(app.Configuration["Storage:Provider"], "Minio", StringComparison.OrdinalIgnoreCase))
+{
+    var uploadsRoot = LocalFileStorageService.ResolveRoot(app.Configuration, app.Environment);
+    Directory.CreateDirectory(uploadsRoot);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uploadsRoot),
+        RequestPath = LocalFileStorageService.RequestPath,
+        ServeUnknownFileTypes = false,
+        OnPrepareResponse = ctx =>
+        {
+            // File names are GUIDs, so they never change.
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+            ctx.Context.Response.Headers.XContentTypeOptions = "nosniff";
+        }
+    });
+}
+
 app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 
@@ -96,5 +124,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();

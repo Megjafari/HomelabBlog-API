@@ -18,18 +18,20 @@ Frontend: [Megjafari/blog](https://github.com/Megjafari/blog)
 | POST | `/api/admin/posts/{id}/publish` `/unpublish` | JWT | Change status (first `PublishedAt` is kept) |
 | POST | `/api/admin/upload` | JWT | Upload an image (JPEG/PNG/GIF/WebP/AVIF, max 5 MB) |
 
-In Development the OpenAPI document is served at `/openapi/v1.json`.
+`GET /health` is a liveness check. In Development the OpenAPI document is served at `/openapi/v1.json`.
 
 ## Configuration
 
-All settings can be set as environment variables (`__` replaces `:`). See [`.env.example`](.env.example) for the full list. Required: `ConnectionStrings__BlogDb`, `Jwt__SigningKey`, `AdminUser__Username`, `AdminUser__PasswordHash` (BCrypt), `Minio__*`.
+All settings can be set as environment variables (`__` replaces `:`). See [`.env.example`](.env.example) for the full list. Required: `ConnectionStrings__BlogDb`, `Jwt__SigningKey`, `AdminUser__Username`, `AdminUser__PasswordHash` (BCrypt).
+
+Images are stored on disk by default (`Storage__LocalPath`, served from `/uploads`); set `Storage__Provider=Minio` and `Minio__*` to use MinIO instead.
 
 Other settings: `Cors__AllowedOrigins__0` (frontend origin), `Site__BaseUrl` (used for RSS links) and `Database__MigrateOnStartup` (default `true`).
 
 ## Run locally
 
 ```bash
-# PostgreSQL and MinIO must be running; set the variables from .env.example first
+# PostgreSQL must be running; set ConnectionStrings__BlogDb, Jwt__SigningKey and AdminUser__* first
 dotnet run
 ```
 
@@ -41,8 +43,10 @@ The API listens on http://localhost:5062 and applies EF Core migrations on start
 dotnet test tests/HomelabBlog.Api.Tests
 ```
 
-## Docker
+## Docker and deployment
 
 ```bash
 docker build -t homelab-blog-api .
 ```
+
+The image listens on port 8080 and stores uploads in `/data/uploads` (mount a volume there). See [docs/deploy.md](docs/deploy.md) for the full Coolify + Postgres VM setup.
