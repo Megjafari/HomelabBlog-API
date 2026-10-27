@@ -20,6 +20,9 @@ public class PostsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<PostListItemDto>>> GetAll([FromQuery] string? tag, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
         var query = _db.Posts
             .Where(p => p.Status == PostStatus.Published)
             .AsQueryable();

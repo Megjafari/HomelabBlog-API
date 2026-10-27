@@ -8,6 +8,8 @@ public class MinioFileStorageService : IFileStorageService
     private readonly IMinioClient _client;
     private readonly string _bucket;
     private readonly string _publicBaseUrl;
+    private readonly SemaphoreSlim _bucketLock = new(1, 1);
+    private bool _bucketReady;
 
     public MinioFileStorageService(IConfiguration config)
     {
@@ -21,7 +23,24 @@ public class MinioFileStorageService : IFileStorageService
             .Build();
     }
 
-    public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
+    private async Task EnsureBucketAsync()
+    {
+        if (_bucketReady) return;
+
+        await _bucketLock.WaitAsync();
+        try
+        {
+            if (_bucketReady) return;
+            await CreateBucketIfMissingAsync();
+            _bucketReady = true;
+        }
+        finally
+        {
+            _bucketLock.Release();
+        }
+    }
+
+    private async Task CreateBucketIfMissingAsync()
     {
         var bucketExists = await _client.BucketExistsAsync(new BucketExistsArgs().WithBucket(_bucket));
         if (!bucketExists)
@@ -46,8 +65,14 @@ public class MinioFileStorageService : IFileStorageService
                 .WithBucket(_bucket)
                 .WithPolicy(policy));
         }
+    }
 
-        var objectName = $"{Guid.NewGuid()}-{fileName}";
+    public async Task<string> UploadAsync(Stream fileStream, string fileName, string contentType)
+    {
+        await EnsureBucketAsync();
+
+        // Never trust the client's file name: keep only the extension.
+        var objectName = $"{Guid.NewGuid()}{Path.GetExtension(fileName).ToLowerInvariant()}";
 
         await _client.PutObjectAsync(new PutObjectArgs()
             .WithBucket(_bucket)
