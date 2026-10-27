@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -21,12 +22,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public IActionResult Login(LoginRequest request)
     {
         var validUsername = _config["AdminUser:Username"];
         var storedHash = _config["AdminUser:PasswordHash"];
 
-        if (request.Username != validUsername ||
+        if (!UsernameMatches(request.Username, validUsername) ||
             storedHash is null ||
             !BCrypt.Net.BCrypt.Verify(request.Password, storedHash))
         {
@@ -46,5 +48,12 @@ public class AuthController : ControllerBase
         );
 
         return Ok(new LoginResponse(new JwtSecurityTokenHandler().WriteToken(token)));
+    }
+
+    private static bool UsernameMatches(string provided, string? expected)
+    {
+        if (expected is null) return false;
+        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(provided), Encoding.UTF8.GetBytes(expected));
     }
 }
