@@ -67,7 +67,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<BlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("BlogDb")));
 
-builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
+builder.Services.AddSingleton<IFileStorageService, MinioFileStorageService>();
 
 var app = builder.Build();
 

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HomelabBlog.Api.DTOs;
 
 public record PostListItemDto(
@@ -23,19 +25,24 @@ public record PostDetailDto(
 );
 
 public record CreatePostDto(
-    string Title,
-    string Slug,
-    string Content,
-    string? Excerpt,
-    string? HeroImageUrl,
-    List<string>? Tags
+    [Required, StringLength(200, MinimumLength = 1)] string Title,
+    [Required, StringLength(200), RegularExpression(PostRules.SlugPattern, ErrorMessage = "Slug may only contain lowercase letters, digits and single hyphens.")] string Slug,
+    [Required] string Content,
+    [StringLength(500)] string? Excerpt,
+    [StringLength(2048)] string? HeroImageUrl,
+    [MaxLength(20)] List<string>? Tags
 );
 
 public record UpdatePostDto(
-    string Title,
-    string Slug,
-    string Content,
-    string? Excerpt,
-    string? HeroImageUrl,
-    List<string>? Tags
+    [Required, StringLength(200, MinimumLength = 1)] string Title,
+    [Required, StringLength(200), RegularExpression(PostRules.SlugPattern, ErrorMessage = "Slug may only contain lowercase letters, digits and single hyphens.")] string Slug,
+    [Required] string Content,
+    [StringLength(500)] string? Excerpt,
+    [StringLength(2048)] string? HeroImageUrl,
+    [MaxLength(20)] List<string>? Tags
 );
+
+public static class PostRules
+{
+    public const string SlugPattern = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+}
