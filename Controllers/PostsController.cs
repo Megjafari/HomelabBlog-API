@@ -65,7 +65,7 @@ public class PostsController : ControllerBase
 
         return Ok(new PostDetailDto(
             post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
-            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt, post.UpdatedAt,
             post.Tags.Select(t => t.Slug).ToList()));
     }
 

@@ -21,6 +21,7 @@ public record PostDetailDto(
     string? HeroImageUrl,
     string Status,
     DateTime? PublishedAt,
+    DateTime UpdatedAt,
     List<string> Tags
 );
 

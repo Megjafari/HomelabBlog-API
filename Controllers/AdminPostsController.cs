@@ -28,7 +28,7 @@ public class AdminPostsController : ControllerBase
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new PostDetailDto(
                 p.Id, p.Title, p.Slug, p.Content, p.Excerpt,
-                p.HeroImageUrl, p.Status.ToString(), p.PublishedAt,
+                p.HeroImageUrl, p.Status.ToString(), p.PublishedAt, p.UpdatedAt,
                 p.Tags.Select(t => t.Slug).ToList()))
             .ToListAsync();
 
@@ -43,7 +43,7 @@ public class AdminPostsController : ControllerBase
 
         return Ok(new PostDetailDto(
             post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
-            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt, post.UpdatedAt,
             post.Tags.Select(t => t.Slug).ToList()));
     }
 
@@ -73,7 +73,7 @@ public class AdminPostsController : ControllerBase
 
         var result = new PostDetailDto(
             post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
-            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt, post.UpdatedAt,
             post.Tags.Select(t => t.Slug).ToList());
 
         return CreatedAtAction(nameof(GetById), new { id = post.Id }, result);
@@ -103,7 +103,7 @@ public class AdminPostsController : ControllerBase
 
         var result = new PostDetailDto(
             post.Id, post.Title, post.Slug, post.Content, post.Excerpt,
-            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt,
+            post.HeroImageUrl, post.Status.ToString(), post.PublishedAt, post.UpdatedAt,
             post.Tags.Select(t => t.Slug).ToList());
 
         return Ok(result);
